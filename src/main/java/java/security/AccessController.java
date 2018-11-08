@@ -437,8 +437,8 @@ public final class AccessController {
             throw new NullPointerException("null permissions parameter");
         }
         Class <?> caller = Reflection.getCallerClass();// ·caller
-        return AccessController.doPrivileged(action, createWrapper(null,
-            caller, parent, context, perms));
+        // ·对 caller、AccessControlContext、Permission包装，然后对 action进行授权。注意没有 DomainCombiner（即 combiner）
+        return AccessController.doPrivileged(action, createWrapper(null, caller, parent, context, perms));
     }
 
 
@@ -497,14 +497,15 @@ public final class AccessController {
         AccessControlContext parent = getContext();
         DomainCombiner dc = parent.getCombiner();
         if (dc == null && context != null) {
+            // ·如果 parent的 DomainCombiner为Null，则用 context的 DomainCombiner
             dc = context.getCombiner();
         }
         if (perms == null) {
             throw new NullPointerException("null permissions parameter");
         }
         Class <?> caller = Reflection.getCallerClass();
-        return AccessController.doPrivileged(action, createWrapper(dc, caller,
-            parent, context, perms));
+        // ·对 DomainCombiner、caller、AccessControlContext、Permission包装，然后对 action进行授权
+        return AccessController.doPrivileged(action, createWrapper(dc, caller, parent, context, perms));
     }
 
     /**
@@ -605,22 +606,24 @@ public final class AccessController {
             System.getSecurityManager() != null &&
             !callerPD.impliesCreateAccessControlContext())
         {
+            // ·Null的 ProtectionDomain
             ProtectionDomain nullPD = new ProtectionDomain(null, null);
+            // ·返回
             return new AccessControlContext(new ProtectionDomain[] { nullPD });
         } else {
-            // ·用 构造函数包装
+            // ·用 构造函数包装：ProtectionDomain、DomainCombiner、AccessControlContext、Permission[]
             return new AccessControlContext(callerPD, combiner, parent, context, perms);
         }
     }
 
     private static ProtectionDomain getCallerPD(final Class <?> caller) {
-        ProtectionDomain callerPd = doPrivileged
-            (new PrivilegedAction<ProtectionDomain>() {
+        ProtectionDomain callerPd = doPrivileged(new PrivilegedAction<ProtectionDomain>() {
+            @Override
             public ProtectionDomain run() {
+                // ·返回 caller的 ProtectionDomain
                 return caller.getProtectionDomain();
             }
         });
-
         return callerPd;
     }
 
@@ -718,11 +721,14 @@ public final class AccessController {
                                      AccessControlContext context, Permission... perms)
         throws PrivilegedActionException
     {
+        // ·获取 AccessControlContext
         AccessControlContext parent = getContext();
         if (perms == null) {
             throw new NullPointerException("null permissions parameter");
         }
+        // ·获取 caller
         Class <?> caller = Reflection.getCallerClass();
+        // ·将 AccessControlContext、Permission和 caller包装在一起，并对 action进行授权
         return AccessController.doPrivileged(action, createWrapper(null, caller, parent, context, perms));
     }
 
@@ -783,17 +789,19 @@ public final class AccessController {
                                                  Permission... perms)
         throws PrivilegedActionException
     {
+        // ·获取 AccessControlContext和 DomainCombiner
         AccessControlContext parent = getContext();
         DomainCombiner dc = parent.getCombiner();
         if (dc == null && context != null) {
+            // ·如果 parent的 DomainCombiner为Null，则用 context的 DomainCombiner
             dc = context.getCombiner();
         }
         if (perms == null) {
             throw new NullPointerException("null permissions parameter");
         }
         Class <?> caller = Reflection.getCallerClass();
-        return AccessController.doPrivileged(action, createWrapper(dc, caller,
-            parent, context, perms));
+        // ·对 DomainCombiner、caller、AccessControlContext、Permission包装，然后对 action进行授权
+        return AccessController.doPrivileged(action, createWrapper(dc, caller, parent, context, perms));
     }
 
     /**

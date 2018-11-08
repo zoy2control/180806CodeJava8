@@ -235,26 +235,30 @@ public class Package implements java.lang.reflect.AnnotatedElement {
         int [] si = new int[sa.length];
         for (int i = 0; i < sa.length; i++) {
             si[i] = Integer.parseInt(sa[i]);
-            if (si[i] < 0)
+            if (si[i] < 0) {
                 throw NumberFormatException.forInputString("" + si[i]);
+            }
         }
 
         String [] da = desired.split("\\.", -1);
         int [] di = new int[da.length];
         for (int i = 0; i < da.length; i++) {
             di[i] = Integer.parseInt(da[i]);
-            if (di[i] < 0)
+            if (di[i] < 0) {
                 throw NumberFormatException.forInputString("" + di[i]);
+            }
         }
 
         int len = Math.max(di.length, si.length);
         for (int i = 0; i < len; i++) {
             int d = (i < di.length ? di[i] : 0);
             int s = (i < si.length ? si[i] : 0);
-            if (s < d)
+            if (s < d) {
                 return false;
-            if (s > d)
+            }
+            if (s > d) {
                 return true;
+            }
         }
         return true;
     }
@@ -344,6 +348,7 @@ public class Package implements java.lang.reflect.AnnotatedElement {
      * Return the hash code computed from the package name.
      * @return the hash code computed from the package name.
      */
+    @Override
     public int hashCode(){
         return pkgName.hashCode();
     }
@@ -355,17 +360,20 @@ public class Package implements java.lang.reflect.AnnotatedElement {
      * If the package version is defined it is appended.
      * @return the string representation of the package.
      */
+    @Override
     public String toString() {
         String spec = specTitle;
         String ver =  specVersion;
-        if (spec != null && spec.length() > 0)
+        if (spec != null && spec.length() > 0) {
             spec = ", " + spec;
-        else
+        } else {
             spec = "";
-        if (ver != null && ver.length() > 0)
+        }
+        if (ver != null && ver.length() > 0) {
             ver = ", version " + ver;
-        else
+        } else {
             ver = "";
+        }
         return "package " + pkgName + spec + ver;
     }
 
@@ -386,6 +394,7 @@ public class Package implements java.lang.reflect.AnnotatedElement {
      * @throws NullPointerException {@inheritDoc}
      * @since 1.5
      */
+    @Override
     public <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
         return getPackageInfo().getAnnotation(annotationClass);
     }
@@ -412,6 +421,7 @@ public class Package implements java.lang.reflect.AnnotatedElement {
     /**
      * @since 1.5
      */
+    @Override
     public Annotation[] getAnnotations() {
         return getPackageInfo().getAnnotations();
     }
@@ -437,6 +447,7 @@ public class Package implements java.lang.reflect.AnnotatedElement {
     /**
      * @since 1.5
      */
+    @Override
     public Annotation[] getDeclaredAnnotations()  {
         return getPackageInfo().getDeclaredAnnotations();
     }
@@ -465,7 +476,7 @@ public class Package implements java.lang.reflect.AnnotatedElement {
         specVersion = specversion;
         specVendor = specvendor;
         sealBase = sealbase;
-        this.loader = loader;
+        this.loader = loader;// ·同名，所以用 this
     }
 
     /*
@@ -476,7 +487,7 @@ public class Package implements java.lang.reflect.AnnotatedElement {
      * @param url the optional code source url for the package
      */
     private Package(String name, Manifest man, URL url, ClassLoader loader) {
-        String path = name.replace('.', '/').concat("/");
+        String path = name.replace('.', '/').concat("/");// ·包名（"."分割）转成 path（"/"分割），最后"/"结尾
         String sealed = null;
         String specTitle= null;
         String specVersion= null;
@@ -485,7 +496,7 @@ public class Package implements java.lang.reflect.AnnotatedElement {
         String implVersion= null;
         String implVendor= null;
         URL sealBase= null;
-        Attributes attr = man.getAttributes(path);
+        Attributes attr = man.getAttributes(path);// ·由 Manifest获取 Attributes
         if (attr != null) {
             specTitle   = attr.getValue(Name.SPECIFICATION_TITLE);
             specVersion = attr.getValue(Name.SPECIFICATION_VERSION);
@@ -534,16 +545,19 @@ public class Package implements java.lang.reflect.AnnotatedElement {
     }
 
     /*
+     * ·获取 加载的系统包
      * Returns the loaded system package for the specified name.
      */
     static Package getSystemPackage(String name) {
+        // ·对系统包的 map加锁：Map<String, Package>
         synchronized (pkgs) {
-            Package pkg = pkgs.get(name);
-            if (pkg == null) {
-                name = name.replace('.', '/').concat("/");
-                String fn = getSystemPackage0(name);
+            Package pkg = pkgs.get(name);// ·根据 系统包名获取 系统包对象
+
+            if (pkg == null) {// ·未能获取 包对象
+                name = name.replace('.', '/').concat("/");// ·拼接包名（.转为/）
+                String fn = getSystemPackage0(name);// ·native方法：根据 包名（/分割）获取 包对象
                 if (fn != null) {
-                    pkg = defineSystemPackage(name, fn);
+                    pkg = defineSystemPackage(name, fn);// ·定义 package：包名 + 包对象
                 }
             }
             return pkg;
@@ -567,74 +581,88 @@ public class Package implements java.lang.reflect.AnnotatedElement {
     private static Package defineSystemPackage(final String iname,
                                                final String fn)
     {
+        // ·对 C·Package授权，并返回 C·Package
         return AccessController.doPrivileged(new PrivilegedAction<Package>() {
+            @Override
             public Package run() {
                 String name = iname;
                 // Get the cached code source url for the file name
-                URL url = urls.get(fn);
+                URL url = urls.get(fn);// ·根据 包对象获取 url
+                // ·url为 Null，则新建一个url
                 if (url == null) {
                     // URL not found, so create one
-                    File file = new File(fn);
+                    File file = new File(fn);// ·根据 包对象创建 File
                     try {
-                        url = ParseUtil.fileToEncodedURL(file);
+                        url = ParseUtil.fileToEncodedURL(file);// ·将 File转化成 url
                     } catch (MalformedURLException e) {
                     }
                     if (url != null) {
-                        urls.put(fn, url);
+                        urls.put(fn, url);// ·put map，<包对象, url>
+                        // ·<jar文件名, 对应的 Manifest>
                         // If loading a JAR file, then also cache the manifest
                         if (file.isFile()) {
                             mans.put(fn, loadManifest(fn));
                         }
                     }
                 }
+                // ·包名分割由 "/"转换成 "."
                 // Convert to "."-separated package name
                 name = name.substring(0, name.length() - 1).replace('/', '.');
+
                 Package pkg;
-                Manifest man = mans.get(fn);
-                if (man != null) {
+                Manifest man = mans.get(fn);// ·获取 Manifest
+                // ·新建 Package对象
+                if (man != null) {// ·Manifest不为 Null
                     pkg = new Package(name, man, url, null);
                 } else {
                     pkg = new Package(name, null, null, null,
                                       null, null, null, null, null);
                 }
-                pkgs.put(name, pkg);
+                pkgs.put(name, pkg);// ·系统包的map，<包名，包对象>
                 return pkg;
             }
         });
     }
 
     /*
+     * ·根据 jar文件名获取 Manifest
      * Returns the Manifest for the specified JAR file name.
      */
     private static Manifest loadManifest(String fn) {
-        try (FileInputStream fis = new FileInputStream(fn);
-             JarInputStream jis = new JarInputStream(fis, false))
+        try (FileInputStream fis = new FileInputStream(fn);// ·获取 FileInputStream
+             JarInputStream jis = new JarInputStream(fis, false))// ·获取 JarInputStream
         {
-            return jis.getManifest();
+            return jis.getManifest();// ·根据 JarInputStream获取 Manifest
         } catch (IOException e) {
             return null;
         }
     }
 
+    // ·系统包的 map
     // The map of loaded system packages
     private static Map<String, Package> pkgs = new HashMap<>(31);
 
+    // ·目录or zip文件名（作为 key）匹配 url（作为value）
     // Maps each directory or zip file name to its corresponding url
     private static Map<String, URL> urls = new HashMap<>(10);
 
+    // ·jar文件转url的，需要在这里登记
     // Maps each code source url for a jar file to its manifest
     private static Map<String, Manifest> mans = new HashMap<>(10);
 
-    private static native String getSystemPackage0(String name);
+    private static native String getSystemPackage0(String name);// ·根据 包名获取 包对象
     private static native String[] getSystemPackages0();
 
     /*
+     * ·包名和 包属性：private
      * Private storage for the package name and attributes.
      */
     private final String pkgName;
+    // ·spec相关
     private final String specTitle;
     private final String specVersion;
     private final String specVendor;
+    // ·impl相关
     private final String implTitle;
     private final String implVersion;
     private final String implVendor;

@@ -223,8 +223,7 @@ import sun.security.util.SecurityConstants;
  *
  * @since   JDK1.0
  */
-public
-class SecurityManager {
+public class SecurityManager {
 
     /**
      * This field is <code>true</code> if there is a security check in
@@ -235,20 +234,24 @@ class SecurityManager {
      *  call be used instead.
      */
     @Deprecated
-    protected boolean inCheck;
+    protected boolean inCheck;// security check是否在进行
 
     /*
+     *·初始化来对抗最终的攻击
      * Have we been initialized. Effective against finalizer attacks.
      */
     private boolean initialized = false;
 
 
     /**
+     * ·是否获得 AllPermission（全权限）
+     * <p>
      * returns true if the current context has been granted AllPermission
      */
     private boolean hasAllPermission()
     {
         try {
+            // ·检验是否是 ALL_PERMISSION
             checkPermission(SecurityConstants.ALL_PERMISSION);
             return true;
         } catch (SecurityException se) {
@@ -270,10 +273,12 @@ class SecurityManager {
      */
     @Deprecated
     public boolean getInCheck() {
-        return inCheck;
+        return inCheck;// security check是否在进行
     }
 
     /**
+     * ·构造器
+     * <p>
      * Constructs a new <code>SecurityManager</code>.
      *
      * <p> If there is a security manager already installed, this method first
@@ -291,15 +296,16 @@ class SecurityManager {
      * @see java.lang.RuntimePermission
      */
     public SecurityManager() {
+        // ·对 C·SecurityManager加锁
         synchronized(SecurityManager.class) {
             SecurityManager sm = System.getSecurityManager();
             if (sm != null) {
+                // ·校验是否 createSecurityManager成功
                 // ask the currently installed security manager if we
                 // can create a new one.
-                sm.checkPermission(new RuntimePermission
-                                   ("createSecurityManager"));
+                sm.checkPermission(new RuntimePermission("createSecurityManager"));
             }
-            initialized = true;
+            initialized = true;// ·SecurityManager初始化成功，防止攻击
         }
     }
 
@@ -354,9 +360,11 @@ class SecurityManager {
     @Deprecated
     protected ClassLoader currentClassLoader()
     {
-        ClassLoader cl = currentClassLoader0();
-        if ((cl != null) && hasAllPermission())
-            cl = null;
+        ClassLoader cl = currentClassLoader0();// ·当前类的 类加载器
+        // ·类加载器有 全权限
+        if ((cl != null) && hasAllPermission()) {
+            cl = null;// ·类加载器 设置为Null（？？？why）
+        }
         return cl;
     }
 
@@ -400,9 +408,11 @@ class SecurityManager {
      */
     @Deprecated
     protected Class<?> currentLoadedClass() {
-        Class<?> c = currentLoadedClass0();
-        if ((c != null) && hasAllPermission())
+        Class<?> c = currentLoadedClass0();// ·当前加载的类
+        // ·若当前加载的类有 全权限，则把该类丢弃
+        if ((c != null) && hasAllPermission()) {
             c = null;
+        }
         return c;
     }
 
@@ -419,7 +429,7 @@ class SecurityManager {
      *
      */
     @Deprecated
-    protected native int classDepth(String name);
+    protected native int classDepth(String name);// ·指定类的 调用栈深度
 
     /**
      * Returns the stack depth of the most recently executing method
@@ -459,19 +469,22 @@ class SecurityManager {
     @Deprecated
     protected int classLoaderDepth()
     {
-        int depth = classLoaderDepth0();
+        int depth = classLoaderDepth0();// ·类加载器的 调用栈深度
         if (depth != -1) {
-            if (hasAllPermission())
+            if (hasAllPermission()) {
                 depth = -1;
-            else
-                depth--; // make sure we don't include ourself
+            } else {
+                depth--; // make sure we don't include ourself。把自己排除
+            }
         }
         return depth;
     }
 
-    private native int classLoaderDepth0();
+    private native int classLoaderDepth0();// ·当前 调用栈深度
 
     /**
+     * ·方法对应的类是否在 调用栈内
+     * <p>
      * Tests if a method from a class with the specified
      *         name is on the execution stack.
      *
@@ -484,7 +497,7 @@ class SecurityManager {
      */
     @Deprecated
     protected boolean inClass(String name) {
-        return classDepth(name) >= 0;
+        return classDepth(name) >= 0;// ·类名为name的类是否在 类调用栈内
     }
 
     /**
@@ -527,7 +540,7 @@ class SecurityManager {
      * @see     java.security.AccessControlContext AccessControlContext
      */
     public Object getSecurityContext() {
-        return AccessController.getContext();
+        return AccessController.getContext();// ·获取SecurityContext
     }
 
     /**
@@ -582,7 +595,7 @@ class SecurityManager {
      * @since      1.2
      */
     public void checkPermission(Permission perm, Object context) {
-        if (context instanceof AccessControlContext) {
+        if (context instanceof AccessControlContext) {// ·只有C·AccessControlContext才可以校验 permission
             ((AccessControlContext)context).checkPermission(perm);
         } else {
             throw new SecurityException();
@@ -609,6 +622,7 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkCreateClassLoader() {
+        // ·校验 createClassLoader的权限
         checkPermission(SecurityConstants.CREATE_CLASSLOADER_PERMISSION);
     }
 
@@ -617,14 +631,14 @@ class SecurityManager {
      * methods.
      */
 
-    private static ThreadGroup rootGroup = getRootGroup();
+    private static ThreadGroup rootGroup = getRootGroup();// ·获取 根线程组
 
     private static ThreadGroup getRootGroup() {
-        ThreadGroup root =  Thread.currentThread().getThreadGroup();
+        ThreadGroup root =  Thread.currentThread().getThreadGroup();// ·当前线程组
         while (root.getParent() != null) {
-            root = root.getParent();
+            root = root.getParent();// ·获取 父类线程组
         }
-        return root;
+        return root;// ·root线程组
     }
 
     /**
@@ -673,7 +687,8 @@ class SecurityManager {
         if (t == null) {
             throw new NullPointerException("thread can't be null");
         }
-        if (t.getThreadGroup() == rootGroup) {
+        if (t.getThreadGroup() == rootGroup) {// ·当前线程的线程组为 根线程组
+            // ·有 modifyThread权限。也就是只有 根线程才有 modifyThread权限
             checkPermission(SecurityConstants.MODIFY_THREAD_PERMISSION);
         } else {
             // just return
@@ -726,7 +741,8 @@ class SecurityManager {
         if (g == null) {
             throw new NullPointerException("thread group can't be null");
         }
-        if (g == rootGroup) {
+        if (g == rootGroup) {// ·入参线程组为 根线程组
+            // ·有 modifyThreadGroup的权限
             checkPermission(SecurityConstants.MODIFY_THREADGROUP_PERMISSION);
         } else {
             // just return
@@ -734,6 +750,8 @@ class SecurityManager {
     }
 
     /**
+     * ·exit JVM
+     * <p>
      * Throws a <code>SecurityException</code> if the
      * calling thread is not allowed to cause the Java Virtual Machine to
      * halt with the specified status code.
@@ -751,7 +769,7 @@ class SecurityManager {
      * at the point the overridden method would normally throw an
      * exception.
      *
-     * @param      status   the exit status.
+     * @param      status   the exit status.// ·exit的状态值
      * @exception SecurityException if the calling thread does not have
      *              permission to halt the Java Virtual Machine with
      *              the specified status.
@@ -759,6 +777,7 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkExit(int status) {
+        // ·校验 运行时exitVM权限
         checkPermission(new RuntimePermission("exitVM."+status));
     }
 
@@ -793,12 +812,12 @@ class SecurityManager {
      */
     public void checkExec(String cmd) {
         File f = new File(cmd);
-        if (f.isAbsolute()) {
-            checkPermission(new FilePermission(cmd,
-                SecurityConstants.FILE_EXECUTE_ACTION));
+        if (f.isAbsolute()) {// ·绝对的
+            // ·校验文件是否有 execute权限
+            checkPermission(new FilePermission(cmd, SecurityConstants.FILE_EXECUTE_ACTION));
         } else {
-            checkPermission(new FilePermission("<<ALL FILES>>",
-                SecurityConstants.FILE_EXECUTE_ACTION));
+            // ·校验文件是否有 execute权限
+            checkPermission(new FilePermission("<<ALL FILES>>", SecurityConstants.FILE_EXECUTE_ACTION));
         }
     }
 
@@ -833,6 +852,7 @@ class SecurityManager {
         if (lib == null) {
             throw new NullPointerException("library can't be null");
         }
+        // ·校验 loadLibrary的权限
         checkPermission(new RuntimePermission("loadLibrary."+lib));
     }
 
@@ -862,6 +882,7 @@ class SecurityManager {
         if (fd == null) {
             throw new NullPointerException("file descriptor can't be null");
         }
+        // ·校验 readFileDescriptor（读文件句柄）的权限
         checkPermission(new RuntimePermission("readFileDescriptor"));
     }
 
@@ -886,8 +907,8 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkRead(String file) {
-        checkPermission(new FilePermission(file,
-            SecurityConstants.FILE_READ_ACTION));
+        // ·校验 文件读权限
+        checkPermission(new FilePermission(file, SecurityConstants.FILE_READ_ACTION));
     }
 
     /**
@@ -921,9 +942,8 @@ class SecurityManager {
      * @see        java.security.AccessControlContext#checkPermission(java.security.Permission)
      */
     public void checkRead(String file, Object context) {
-        checkPermission(
-            new FilePermission(file, SecurityConstants.FILE_READ_ACTION),
-            context);
+        // ·根据 上下文校验 文件读权限
+        checkPermission( new FilePermission(file, SecurityConstants.FILE_READ_ACTION), context);
     }
 
     /**
@@ -952,6 +972,7 @@ class SecurityManager {
         if (fd == null) {
             throw new NullPointerException("file descriptor can't be null");
         }
+        // ·校验 writeFileDescriptor权限
         checkPermission(new RuntimePermission("writeFileDescriptor"));
 
     }
@@ -977,8 +998,8 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkWrite(String file) {
-        checkPermission(new FilePermission(file,
-            SecurityConstants.FILE_WRITE_ACTION));
+        // ·校验 文件写权限
+        checkPermission(new FilePermission(file, SecurityConstants.FILE_WRITE_ACTION));
     }
 
     /**
@@ -1005,8 +1026,8 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkDelete(String file) {
-        checkPermission(new FilePermission(file,
-            SecurityConstants.FILE_DELETE_ACTION));
+        // ·校验 文件删除权限
+        checkPermission(new FilePermission(file, SecurityConstants.FILE_DELETE_ACTION));
     }
 
     /**
@@ -1043,14 +1064,14 @@ class SecurityManager {
             throw new NullPointerException("host can't be null");
         }
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = "[" + host + "]";// ·拼接 "[host]"
         }
-        if (port == -1) {
-            checkPermission(new SocketPermission(host,
-                SecurityConstants.SOCKET_RESOLVE_ACTION));
-        } else {
-            checkPermission(new SocketPermission(host+":"+port,
-                SecurityConstants.SOCKET_CONNECT_ACTION));
+        if (port == -1) {// ·无端口
+            // ·校验 socket的 resolve权限
+            checkPermission(new SocketPermission(host, SecurityConstants.SOCKET_RESOLVE_ACTION));
+        } else {// ·有端口
+            // ·校验 socket的 connect权限
+            checkPermission(new SocketPermission(host+":"+port, SecurityConstants.SOCKET_CONNECT_ACTION));
         }
     }
 
@@ -1100,14 +1121,13 @@ class SecurityManager {
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
             host = "[" + host + "]";
         }
-        if (port == -1)
-            checkPermission(new SocketPermission(host,
-                SecurityConstants.SOCKET_RESOLVE_ACTION),
-                context);
-        else
-            checkPermission(new SocketPermission(host+":"+port,
-                SecurityConstants.SOCKET_CONNECT_ACTION),
-                context);
+        if (port == -1) {// ·无端口
+            // ·根据上下文，校验 socket的 resolve权限
+            checkPermission(new SocketPermission(host, SecurityConstants.SOCKET_RESOLVE_ACTION), context);
+        } else {// ·有端口
+            // ·根据上下文，校验 socket的 connect权限
+            checkPermission(new SocketPermission(host+":"+port, SecurityConstants.SOCKET_CONNECT_ACTION), context);
+        }
     }
 
     /**
@@ -1129,8 +1149,8 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkListen(int port) {
-        checkPermission(new SocketPermission("localhost:"+port,
-            SecurityConstants.SOCKET_LISTEN_ACTION));
+        // ·校验 socket的 listen权限
+        checkPermission(new SocketPermission("localhost:"+port, SecurityConstants.SOCKET_LISTEN_ACTION));
     }
 
     /**
@@ -1163,10 +1183,10 @@ class SecurityManager {
             throw new NullPointerException("host can't be null");
         }
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = "[" + host + "]";// ·拼接"[host]"
         }
-        checkPermission(new SocketPermission(host+":"+port,
-            SecurityConstants.SOCKET_ACCEPT_ACTION));
+        // ·校验 socket的 accept权限
+        checkPermission(new SocketPermission(host+":"+port, SecurityConstants.SOCKET_ACCEPT_ACTION));
     }
 
     /**
@@ -1192,12 +1212,12 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkMulticast(InetAddress maddr) {
-        String host = maddr.getHostAddress();
+        String host = maddr.getHostAddress();// 根据 InetAddress获取 host
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = "[" + host + "]";// ·拼接"[host]"
         }
-        checkPermission(new SocketPermission(host,
-            SecurityConstants.SOCKET_CONNECT_ACCEPT_ACTION));
+        // ·校验 socket的 connect,accept权限
+        checkPermission(new SocketPermission(host, SecurityConstants.SOCKET_CONNECT_ACCEPT_ACTION));
     }
 
     /**
@@ -1228,12 +1248,12 @@ class SecurityManager {
      */
     @Deprecated
     public void checkMulticast(InetAddress maddr, byte ttl) {
-        String host = maddr.getHostAddress();
+        String host = maddr.getHostAddress();// ·根据 InetAddress获取 host
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = "[" + host + "]";// ·拼接"[host]"
         }
-        checkPermission(new SocketPermission(host,
-            SecurityConstants.SOCKET_CONNECT_ACCEPT_ACTION));
+        // ·校验 socket的 connect,accept权限
+        checkPermission(new SocketPermission(host, SecurityConstants.SOCKET_CONNECT_ACCEPT_ACTION));
     }
 
     /**
@@ -1260,8 +1280,8 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkPropertiesAccess() {
-        checkPermission(new PropertyPermission("*",
-            SecurityConstants.PROPERTY_RW_ACTION));
+        // ·校验 Property的 read,write权限
+        checkPermission(new PropertyPermission("*", SecurityConstants.PROPERTY_RW_ACTION));
     }
 
     /**
@@ -1292,8 +1312,8 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkPropertyAccess(String key) {
-        checkPermission(new PropertyPermission(key,
-            SecurityConstants.PROPERTY_READ_ACTION));
+        // ·根据Key，校验 Property的 read权限
+        checkPermission(new PropertyPermission(key, SecurityConstants.PROPERTY_READ_ACTION));
     }
 
     /**
@@ -1343,11 +1363,12 @@ class SecurityManager {
         if (window == null) {
             throw new NullPointerException("window can't be null");
         }
-        Permission perm = SecurityConstants.AWT.TOPLEVEL_WINDOW_PERMISSION;
-        if (perm == null) {
-            perm = SecurityConstants.ALL_PERMISSION;
+        Permission perm = SecurityConstants.AWT.TOPLEVEL_WINDOW_PERMISSION;// ·最高级的windows权限
+        if (perm == null) {// ·没有 最高级的windows权限
+            perm = SecurityConstants.ALL_PERMISSION;// ·赋予 全权限
         }
         try {
+            // ·校验 全权限
             checkPermission(perm);
             return true;
         } catch (SecurityException se) {
@@ -1376,6 +1397,7 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkPrintJobAccess() {
+        // ·校验 运行时任务队列权限
         checkPermission(new RuntimePermission("queuePrintJob"));
     }
 
@@ -1408,10 +1430,11 @@ class SecurityManager {
      */
     @Deprecated
     public void checkSystemClipboardAccess() {
-        Permission perm = SecurityConstants.AWT.ACCESS_CLIPBOARD_PERMISSION;
-        if (perm == null) {
-            perm = SecurityConstants.ALL_PERMISSION;
+        Permission perm = SecurityConstants.AWT.ACCESS_CLIPBOARD_PERMISSION;// ·awt的 accessClipboard权限
+        if (perm == null) {// ·没有awt的 accessClipboard权限
+            perm = SecurityConstants.ALL_PERMISSION;// ·赋予 全权限
         }
+        // 校验 Permission（accessClipboard权限或 全权限）
         checkPermission(perm);
     }
 
@@ -1444,10 +1467,11 @@ class SecurityManager {
      */
     @Deprecated
     public void checkAwtEventQueueAccess() {
-        Permission perm = SecurityConstants.AWT.CHECK_AWT_EVENTQUEUE_PERMISSION;
-        if (perm == null) {
-            perm = SecurityConstants.ALL_PERMISSION;
+        Permission perm = SecurityConstants.AWT.CHECK_AWT_EVENTQUEUE_PERMISSION;// ·awt的 accessEventQueue权限
+        if (perm == null) {// ·没有awt的 accessEventQueue权限
+            perm = SecurityConstants.ALL_PERMISSION;// ·赋予 全权限
         }
+        // 校验 Permission（accessEventQueue权限或 全权限）
         checkPermission(perm);
     }
 
@@ -1467,32 +1491,38 @@ class SecurityManager {
      * when a thread updates the property and when other threads updates
      * the cache.
      */
-    private static boolean packageAccessValid = false;
+    private static boolean packageAccessValid = false;// ·包访问合法
     private static String[] packageAccess;
     private static final Object packageAccessLock = new Object();
 
-    private static boolean packageDefinitionValid = false;
+    private static boolean packageDefinitionValid = false;// ·包定义合法
     private static String[] packageDefinition;
     private static final Object packageDefinitionLock = new Object();
 
+    /**
+     * ·将包名分词，String 转成 String[]
+     * @param p
+     * @return
+     */
     private static String[] getPackages(String p) {
         String packages[] = null;
         if (p != null && !p.equals("")) {
-            java.util.StringTokenizer tok =
-                new java.util.StringTokenizer(p, ",");
-            int n = tok.countTokens();
+            java.util.StringTokenizer tok = new java.util.StringTokenizer(p, ",");// ·String分词器
+            int n = tok.countTokens();// ·词数目
             if (n > 0) {
                 packages = new String[n];
                 int i = 0;
+                // ·遍历元素
                 while (tok.hasMoreElements()) {
-                    String s = tok.nextToken().trim();
-                    packages[i++] = s;
+                    String s = tok.nextToken().trim();// ·分词后去掉首位空格
+                    packages[i++] = s;// 添加进 String[]
                 }
             }
         }
 
-        if (packages == null)
+        if (packages == null) {
             packages = new String[0];
+        }
         return packages;
     }
 
@@ -1534,21 +1564,23 @@ class SecurityManager {
         }
 
         String[] pkgs;
+        // ·包访问锁
         synchronized (packageAccessLock) {
             /*
              * Do we need to update our property array?
              */
-            if (!packageAccessValid) {
+            if (!packageAccessValid) {// ·包访问不合法
+                // ·获取 property
                 String tmpPropertyStr =
                     AccessController.doPrivileged(
                         new PrivilegedAction<String>() {
+                            @Override
                             public String run() {
-                                return java.security.Security.getProperty(
-                                    "package.access");
+                                return java.security.Security.getProperty("package.access");
                             }
                         }
                     );
-                packageAccess = getPackages(tmpPropertyStr);
+                packageAccess = getPackages(tmpPropertyStr);// ·String分割成 String[]
                 packageAccessValid = true;
             }
 
@@ -1558,12 +1590,14 @@ class SecurityManager {
         }
 
         /*
+         * ·遍历匹配，一个即可
          * Traverse the list of packages, check for any matches.
          */
         for (int i = 0; i < pkgs.length; i++) {
-            if (pkg.startsWith(pkgs[i]) || pkgs[i].equals(pkg + ".")) {
-                checkPermission(
-                    new RuntimePermission("accessClassInPackage."+pkg));
+            if (pkg.startsWith(pkgs[i]) || pkgs[i].equals(pkg + ".")) {// ·若 入参pkg开头可以在 pkgs[]中找到，并且 "pkg." 等于 pkgs[i]
+                // ·校验 accessClassInPackage权限
+                checkPermission(new RuntimePermission("accessClassInPackage."+pkg));
+                // ·只要有一个可以，就返回
                 break;  // No need to continue; only need to check this once
             }
         }
@@ -1603,22 +1637,25 @@ class SecurityManager {
         }
 
         String[] pkgs;
+        // ·包定义锁
         synchronized (packageDefinitionLock) {
             /*
              * Do we need to update our property array?
              */
-            if (!packageDefinitionValid) {
+            if (!packageDefinitionValid) {// ·包定义非法
+                // ·获取 包定义property
                 String tmpPropertyStr =
                     AccessController.doPrivileged(
                         new PrivilegedAction<String>() {
+                            @Override
                             public String run() {
                                 return java.security.Security.getProperty(
                                     "package.definition");
                             }
                         }
                     );
-                packageDefinition = getPackages(tmpPropertyStr);
-                packageDefinitionValid = true;
+                packageDefinition = getPackages(tmpPropertyStr);// ·分词，String转 String[]
+                packageDefinitionValid = true;// ·包定义合法
             }
             // Using a snapshot of packageDefinition -- don't care if static
             // field changes afterwards; array contents won't change.
@@ -1626,12 +1663,14 @@ class SecurityManager {
         }
 
         /*
+         * ·遍历匹配到一个即可
          * Traverse the list of packages, check for any matches.
          */
         for (int i = 0; i < pkgs.length; i++) {
-            if (pkg.startsWith(pkgs[i]) || pkgs[i].equals(pkg + ".")) {
-                checkPermission(
-                    new RuntimePermission("defineClassInPackage."+pkg));
+            if (pkg.startsWith(pkgs[i]) || pkgs[i].equals(pkg + ".")) {// ·匹配 包定义名称
+                // ·校验 defineClassInPackage权限
+                checkPermission(new RuntimePermission("defineClassInPackage."+pkg));
+                // ·匹配到一个即可
                 break; // No need to continue; only need to check this once
             }
         }
@@ -1662,6 +1701,7 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkSetFactory() {
+        // ·校验 运行时setFactory的权限
         checkPermission(new RuntimePermission("setFactory"));
     }
 
@@ -1706,8 +1746,8 @@ class SecurityManager {
         if (clazz == null) {
             throw new NullPointerException("class can't be null");
         }
-        if (which != Member.PUBLIC) {
-            Class<?> stack[] = getClassContext();
+        if (which != Member.PUBLIC) {// ·Member不为 public
+            Class<?> stack[] = getClassContext();// ·获取 class上下文：Class[]
             /*
              * stack depth of 4 should be the caller of one of the
              * methods in java.lang.Class that invoke checkMember
@@ -1721,6 +1761,7 @@ class SecurityManager {
              */
             if ((stack.length<4) ||
                 (stack[3].getClassLoader() != clazz.getClassLoader())) {
+                // ·校验 accessDeclaredMembers权限（声明 成员变量的权限）
                 checkPermission(SecurityConstants.CHECK_MEMBER_ACCESS_PERMISSION);
             }
         }
@@ -1757,6 +1798,7 @@ class SecurityManager {
      * @see        #checkPermission(java.security.Permission) checkPermission
      */
     public void checkSecurityAccess(String target) {
+        // ·校验 入参权限
         checkPermission(new SecurityPermission(target));
     }
 
@@ -1774,6 +1816,7 @@ class SecurityManager {
      * @see     java.lang.ThreadGroup
      */
     public ThreadGroup getThreadGroup() {
+        // ·获取 当前线程的线程组
         return Thread.currentThread().getThreadGroup();
     }
 

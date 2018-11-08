@@ -48,7 +48,7 @@ import java.util.Iterator;
  */
 public class Manifest implements Cloneable {
     // manifest main attributes
-    private Attributes attr = new Attributes();
+    private Attributes attr = new Attributes();// ·manifest的 主属性
 
     // manifest entries
     private Map<String, Attributes> entries = new HashMap<>();
@@ -167,22 +167,26 @@ public class Manifest implements Cloneable {
     }
 
     /**
+     * ·强制每行最多 72-byte，即 每72-byte就插入"\r\n"
      * Adds line breaks to enforce a maximum 72 bytes per line.
      */
     static void make72Safe(StringBuffer line) {
         int length = line.length();
         if (length > 72) {
             int index = 70;
+            // ·每 72个字符就插入"\r\n"，即 一行最大 72-byte
             while (index < length - 2) {
                 line.insert(index, "\r\n ");
-                index += 72;
-                length += 3;
+                index += 72;// ·下一个72字符结束位置
+                length += 3;// ·插入"\r\n"保持 line.length()一致
             }
         }
         return;
     }
 
     /**
+     * ·从 InputStream中读取 Manifest
+     * <p>
      * Reads the Manifest from the specified InputStream. The entry
      * names and attributes read will be merged in with the current
      * manifest entries.
@@ -193,10 +197,10 @@ public class Manifest implements Cloneable {
     public void read(InputStream is) throws IOException {
         // Buffered input stream for reading manifest data
         FastInputStream fis = new FastInputStream(is);
-        // Line buffer
-        byte[] lbuf = new byte[512];
+        byte[] lbuf = new byte[512];// Line buffer
+
         // Read the main attributes for the manifest
-        attr.read(fis, lbuf);
+        attr.read(fis, lbuf);// ·C·Attribute的 .read()
         // Total number of entries, attributes read
         int ecount = 0, acount = 0;
         // Average size of entry attributes
@@ -286,6 +290,7 @@ public class Manifest implements Cloneable {
      * @return true if the specified Object is also a Manifest and has
      * the same main Attributes and entries
      */
+    @Override
     public boolean equals(Object o) {
         if (o instanceof Manifest) {
             Manifest m = (Manifest)o;
@@ -299,6 +304,7 @@ public class Manifest implements Cloneable {
     /**
      * Returns the hash code for this Manifest.
      */
+    @Override
     public int hashCode() {
         return attr.hashCode() + entries.hashCode();
     }
@@ -311,11 +317,13 @@ public class Manifest implements Cloneable {
      * </pre>
      * @return a shallow copy of this Manifest
      */
+    @Override
     public Object clone() {
         return new Manifest(this);
     }
 
     /*
+     * ·快buffer inputStream，用于存储 解析好的manifestFile
      * A fast buffered input stream for parsing manifest files.
      */
     static class FastInputStream extends FilterInputStream {
@@ -324,14 +332,15 @@ public class Manifest implements Cloneable {
         private int pos = 0;
 
         FastInputStream(InputStream in) {
-            this(in, 8192);
+            this(in, 8192);// ·byte[]默认大小8192
         }
 
         FastInputStream(InputStream in, int size) {
             super(in);
-            buf = new byte[size];
+            buf = new byte[size];// ·初始化byte[]
         }
 
+        @Override
         public int read() throws IOException {
             if (pos >= count) {
                 fill();
@@ -342,6 +351,7 @@ public class Manifest implements Cloneable {
             return Byte.toUnsignedInt(buf[pos++]);
         }
 
+        @Override
         public int read(byte[] b, int off, int len) throws IOException {
             int avail = count - pos;
             if (avail <= 0) {
@@ -384,7 +394,8 @@ public class Manifest implements Cloneable {
                 }
                 int tpos = pos;
                 int maxpos = tpos + n;
-                while (tpos < maxpos && tbuf[tpos++] != '\n') ;
+                while (tpos < maxpos && tbuf[tpos++] != '\n') {
+                }
                 n = tpos - pos;
                 System.arraycopy(tbuf, pos, b, off, n);
                 off += n;
@@ -398,10 +409,12 @@ public class Manifest implements Cloneable {
         }
 
         public byte peek() throws IOException {
-            if (pos == count)
+            if (pos == count) {
                 fill();
-            if (pos == count)
+            }
+            if (pos == count) {
                 return -1; // nothing left in buffer
+            }
             return buf[pos];
         }
 
@@ -409,6 +422,7 @@ public class Manifest implements Cloneable {
             return readLine(b, 0, b.length);
         }
 
+        @Override
         public long skip(long n) throws IOException {
             if (n <= 0) {
                 return 0;
@@ -424,10 +438,12 @@ public class Manifest implements Cloneable {
             return n;
         }
 
+        @Override
         public int available() throws IOException {
             return (count - pos) + in.available();
         }
 
+        @Override
         public void close() throws IOException {
             if (in != null) {
                 in.close();
@@ -438,7 +454,7 @@ public class Manifest implements Cloneable {
 
         private void fill() throws IOException {
             count = pos = 0;
-            int n = in.read(buf, 0, buf.length);
+            int n = in.read(buf, 0, buf.length);// ·读取
             if (n > 0) {
                 count = n;
             }

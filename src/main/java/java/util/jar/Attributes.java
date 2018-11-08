@@ -55,13 +55,13 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * The attribute name-value mappings.
      */
-    protected Map<Object,Object> map;
+    protected Map<Object,Object> map;// ·属性的K-V
 
     /**
      * Constructs a new, empty Attributes object with default size.
      */
     public Attributes() {
-        this(11);
+        this(11);// ·默认大小11
     }
 
     /**
@@ -71,7 +71,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param size the initial number of attributes
      */
     public Attributes(int size) {
-        map = new HashMap<>(size);
+        map = new HashMap<>(size);// ·指定 map大小
     }
 
     /**
@@ -81,7 +81,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param attr the specified Attributes
      */
     public Attributes(Attributes attr) {
-        map = new HashMap<>(attr);
+        map = new HashMap<>(attr);// ·指定 Attribute
     }
 
 
@@ -93,8 +93,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return the value of the specified attribute name, or null if
      *         not found.
      */
+    @Override
     public Object get(Object name) {
-        return map.get(name);
+        return map.get(name);// ·map.get()
     }
 
     /**
@@ -113,7 +114,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @throws IllegalArgumentException if the attribute name is invalid
      */
     public String getValue(String name) {
-        return (String)get(new Attributes.Name(name));
+        return (String)get(new Attributes.Name(name));// ·map.get()
     }
 
     /**
@@ -130,7 +131,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      *         not found.
      */
     public String getValue(Name name) {
-        return (String)get(name);
+        return (String)get(name);// ·map.get()，入参是 Attributes.Name对象
     }
 
     /**
@@ -144,8 +145,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @exception ClassCastException if the name is not a Attributes.Name
      *            or the value is not a String
      */
+    @Override
     public Object put(Object name, Object value) {
-        return map.put((Attributes.Name)name, (String)value);
+        return map.put((Attributes.Name)name, (String)value);// ·map.put()，<Attributes.Name, String>
     }
 
     /**
@@ -165,7 +167,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @exception IllegalArgumentException if the attribute name is invalid
      */
     public String putValue(String name, String value) {
-        return (String)put(new Name(name), value);
+        return (String)put(new Name(name), value);// ·map.put()
     }
 
     /**
@@ -175,8 +177,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name attribute name
      * @return the previous value of the attribute, or null if none
      */
+    @Override
     public Object remove(Object name) {
-        return map.remove(name);
+        return map.remove(name);// ·map.remove()
     }
 
     /**
@@ -187,8 +190,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @return true if this Map maps one or more attribute names to
      *         the specified value
      */
+    @Override
     public boolean containsValue(Object value) {
-        return map.containsValue(value);
+        return map.containsValue(value);// ·map是否包含 入参值
     }
 
     /**
@@ -197,8 +201,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name the attribute name
      * @return true if this Map contains the specified attribute name
      */
+    @Override
     public boolean containsKey(Object name) {
-        return map.containsKey(name);
+        return map.containsKey(name);// ·map是否包含 入参key
     }
 
     /**
@@ -208,24 +213,29 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param attr the Attributes to be stored in this map
      * @exception ClassCastException if attr is not an Attributes
      */
+    @Override
     public void putAll(Map<?,?> attr) {
         // ## javac bug?
-        if (!Attributes.class.isInstance(attr))
+        if (!Attributes.class.isInstance(attr)) {
             throw new ClassCastException();
-        for (Map.Entry<?,?> me : (attr).entrySet())
+        }
+        for (Map.Entry<?,?> me : (attr).entrySet()) {// ·从 入参Map中获取 Entry，put到 CV·map中
             put(me.getKey(), me.getValue());
+        }
     }
 
     /**
      * Removes all attributes from this Map.
      */
+    @Override
     public void clear() {
-        map.clear();
+        map.clear();// ·清除所有k-v
     }
 
     /**
      * Returns the number of attributes in this Map.
      */
+    @Override
     public int size() {
         return map.size();
     }
@@ -233,6 +243,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns true if this Map contains no attributes.
      */
+    @Override
     public boolean isEmpty() {
         return map.isEmpty();
     }
@@ -240,23 +251,26 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns a Set view of the attribute names (keys) contained in this Map.
      */
+    @Override
     public Set<Object> keySet() {
-        return map.keySet();
+        return map.keySet();// ·key set
     }
 
     /**
      * Returns a Collection view of the attribute values contained in this Map.
      */
+    @Override
     public Collection<Object> values() {
-        return map.values();
+        return map.values();// ·value : collection
     }
 
     /**
      * Returns a Collection view of the attribute name-value mappings
      * contained in this Map.
      */
+    @Override
     public Set<Map.Entry<Object,Object>> entrySet() {
-        return map.entrySet();
+        return map.entrySet();// ·k-v对：Set
     }
 
     /**
@@ -267,6 +281,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param o the Object to be compared
      * @return true if the specified Object is equal to this Map
      */
+    @Override
     public boolean equals(Object o) {
         return map.equals(o);
     }
@@ -274,6 +289,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
     /**
      * Returns the hash code value for this Map.
      */
+    @Override
     public int hashCode() {
         return map.hashCode();
     }
@@ -287,84 +303,93 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * the Attributes returned can be safely modified without affecting
      * the original.
      */
+    @Override
     public Object clone() {
-        return new Attributes(this);
+        return new Attributes(this);// ·重写 .clone()，构造器(this）
     }
 
     /*
+     * ·将 当前attributes写入 指定的outputStream
      * Writes the current attributes to the specified data output stream.
+     *
+     * ·需要 UTF-8的值以及 每行最长 72-byte
      * XXX Need to handle UTF8 values and break up lines longer than 72 bytes
      */
      void write(DataOutputStream os) throws IOException {
-        Iterator<Map.Entry<Object, Object>> it = entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<Object, Object> e = it.next();
-            StringBuffer buffer = new StringBuffer(
-                                        ((Name)e.getKey()).toString());
-            buffer.append(": ");
+        Iterator<Map.Entry<Object, Object>> it = entrySet().iterator();// ·map的 迭代器
+        while (it.hasNext()) {// ·遍历
+            Map.Entry<Object, Object> e = it.next();// ·获取 Entry
+            StringBuffer buffer = new StringBuffer(((Name)e.getKey()).toString());// ·获取key
+            buffer.append(": ");// ·拼接“key:”
 
-            String value = (String)e.getValue();
+            String value = (String)e.getValue();// ·获取value
             if (value != null) {
-                byte[] vb = value.getBytes("UTF8");
-                value = new String(vb, 0, 0, vb.length);
+                // ·？？？这样做的目的仅仅是因为 编码"utf-8"吗
+                byte[] vb = value.getBytes("UTF8");// ·value：String以 UTF-8转成 byte[]
+                value = new String(vb, 0, 0, vb.length);// ·byte[]又转成 String
             }
-            buffer.append(value);
+            buffer.append(value);// ·拼接“key:value”
 
-            buffer.append("\r\n");
-            Manifest.make72Safe(buffer);
-            os.writeBytes(buffer.toString());
+            buffer.append("\r\n");// ·拼接“key:value\r\n”
+            Manifest.make72Safe(buffer);// ·强制每行最多 72-byte，做一个截断
+            os.writeBytes(buffer.toString());// ·写。outputStream.writeBytes()
         }
-        os.writeBytes("\r\n");
+        os.writeBytes("\r\n");// ·最后写入 换行符
     }
 
     /*
+     * ·写入 当前属性到 指定outputStream，首先保证 写入MANIFEST_VERSION或 SIGNATURE_VERSION的属性优先
      * Writes the current attributes to the specified data output stream,
      * make sure to write out the MANIFEST_VERSION or SIGNATURE_VERSION
      * attributes first.
      *
+     * ·需要 UTF-8的值以及 每行最长 72-byte
      * XXX Need to handle UTF8 values and break up lines longer than 72 bytes
      */
     void writeMain(DataOutputStream out) throws IOException
     {
+        // ·*-Version先写
         // write out the *-Version header first, if it exists
-        String vername = Name.MANIFEST_VERSION.toString();
-        String version = getValue(vername);
+        String vername = Name.MANIFEST_VERSION.toString();// ·Manifest-Version，key值。versionName
+        String version = getValue(vername);// ·获取 value。versionValue
         if (version == null) {
-            vername = Name.SIGNATURE_VERSION.toString();
-            version = getValue(vername);
+            vername = Name.SIGNATURE_VERSION.toString();// ·Signature-Version
+            version = getValue(vername);// ·获取 value。versionValue
         }
 
-        if (version != null) {
+        if (version != null) {// ·*-Version先写
             out.writeBytes(vername+": "+version+"\r\n");
         }
 
+        // ·写 剩下的attribute（除了 version属性）
         // write out all attributes except for the version
         // we wrote out earlier
-        Iterator<Map.Entry<Object, Object>> it = entrySet().iterator();
+        Iterator<Map.Entry<Object, Object>> it = entrySet().iterator();// ·map的 迭代器
         while (it.hasNext()) {
-            Map.Entry<Object, Object> e = it.next();
-            String name = ((Name)e.getKey()).toString();
-            if ((version != null) && ! (name.equalsIgnoreCase(vername))) {
+            Map.Entry<Object, Object> e = it.next();// ·Entry
+            String name = ((Name)e.getKey()).toString();// ·Key
+            if ((version != null) && ! (name.equalsIgnoreCase(vername))) {// ·忽略大小写equals
 
-                StringBuffer buffer = new StringBuffer(name);
-                buffer.append(": ");
+                StringBuffer buffer = new StringBuffer(name);// ·拼接"key"
+                buffer.append(": ");// ·拼接"key:"
 
-                String value = (String)e.getValue();
+                String value = (String)e.getValue();// ·Value
                 if (value != null) {
-                    byte[] vb = value.getBytes("UTF8");
-                    value = new String(vb, 0, 0, vb.length);
+                    byte[] vb = value.getBytes("UTF8");// ·value转 UTF-8，用 byte[]
+                    value = new String(vb, 0, 0, vb.length);// ·byte[]转 String
                 }
-                buffer.append(value);
+                buffer.append(value);// ·拼接"key:value"
 
-                buffer.append("\r\n");
-                Manifest.make72Safe(buffer);
-                out.writeBytes(buffer.toString());
+                buffer.append("\r\n");// ·拼接"key:value\r\n"
+                Manifest.make72Safe(buffer);// ·截断，每行最长 72-byte
+                out.writeBytes(buffer.toString());// ·写入
             }
         }
-        out.writeBytes("\r\n");
+        out.writeBytes("\r\n");// ·最后写入"\r\n"
     }
 
     /*
+     * ·从 InputStream中读取值到 lbuf：byte[]中
      * Reads attributes from the specified input stream.
      * XXX Need to handle UTF8 values.
      */
@@ -373,13 +398,13 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         byte[] lastline = null;
 
         int len;
-        while ((len = is.readLine(lbuf)) != -1) {
+        while ((len = is.readLine(lbuf)) != -1) {// ·读取 行长度len
             boolean lineContinued = false;
-            if (lbuf[--len] != '\n') {
-                throw new IOException("line too long");
+            if (lbuf[--len] != '\n') {// ·lbuf最后一个字符不是 换行符，
+                throw new IOException("line too long");// ·因为上面 .write()的时候，做了截断，每行最长 72-byte
             }
             if (len > 0 && lbuf[len-1] == '\r') {
-                --len;
+                --len;// ·忽略"\r"
             }
             if (len == 0) {
                 break;
@@ -400,8 +425,10 @@ public class Attributes implements Map<Object,Object>, Cloneable {
                 }
                 value = new String(buf, 0, buf.length, "UTF8");
                 lastline = null;
-            } else {
-                while (lbuf[i++] != ':') {
+
+            } else {// ·lbuf[0] != ' '
+                // ·因为 格式是"key:value\r\n"
+                while (lbuf[i++] != ':') {// ·直到指向 value第一个字符
                     if (i >= len) {
                         throw new IOException("invalid header field");
                     }
@@ -497,6 +524,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * @return true if this attribute name is equal to the
          *         specified attribute object
          */
+        @Override
         public boolean equals(Object o) {
             if (o instanceof Name) {
                 Comparator<String> c = ASCIICaseInsensitiveComparator.CASE_INSENSITIVE_ORDER;
@@ -509,6 +537,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Computes the hash value for this attribute name.
          */
+        @Override
         public int hashCode() {
             if (hashCode == -1) {
                 hashCode = ASCIICaseInsensitiveComparator.lowerCaseHashCode(name);
@@ -519,6 +548,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
         /**
          * Returns the attribute name as a String.
          */
+        @Override
         public String toString() {
             return name;
         }

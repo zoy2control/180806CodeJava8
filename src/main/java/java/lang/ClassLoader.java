@@ -185,7 +185,7 @@ public abstract class ClassLoader {
     // The parent class loader for delegation
     // Note: VM hardcoded the offset of this field, thus all new fields
     // must be added *after* it.
-    private final ClassLoader parent;
+    private final ClassLoader parent;// 父类加载器
 
     /**
      * Encapsulates the set of parallel capable loader types.
@@ -263,6 +263,7 @@ public abstract class ClassLoader {
         classes.addElement(c);
     }
 
+    // ·这个 类加载器定义的 packages。包名为 key，包对象为 value
     // The packages defined in this class loader.  Each package name is mapped
     // to its corresponding Package object.
     // @GuardedBy("itself")
@@ -1565,7 +1566,7 @@ public abstract class ClassLoader {
             // caller can be null if the VM is requesting it
             ClassLoader ccl = getClassLoader(caller);
             if (needsClassLoaderPermissionCheck(ccl, cl)) { // ·cc1 不是c1的 parent，则需要 校验permission
-                // ·getClassLoader permission
+                // ·校验 getClassLoader的权限
                 sm.checkPermission(SecurityConstants.GET_CLASSLOADER_PERMISSION);
             }
         }
@@ -1580,9 +1581,11 @@ public abstract class ClassLoader {
     private static boolean sclSet;
 
 
-    // -- Package --
+    // --------------------------------------------------------------- Package --------------------------------------------------------------------------------
 
     /**
+     * ·定义package
+     * <p>
      * Defines a package by name in this <tt>ClassLoader</tt>.  This allows
      * class loaders to define the packages for their classes. Packages must
      * be created before the class is defined, and package names must be
@@ -1629,6 +1632,7 @@ public abstract class ClassLoader {
                                     String implVendor, URL sealBase)
         throws IllegalArgumentException
     {
+        // ·对 HashMap<String, Package>加锁
         synchronized (packages) {
             Package pkg = getPackage(name);
             if (pkg != null) {
@@ -1656,12 +1660,13 @@ public abstract class ClassLoader {
      */
     protected Package getPackage(String name) {
         Package pkg;
+        // ·对 HashMap<String, Package>加锁
         synchronized (packages) {
-            pkg = packages.get(name);
+            pkg = packages.get(name);// ·根据 包名获取 包对象
         }
         if (pkg == null) {
-            if (parent != null) {
-                pkg = parent.getPackage(name);
+            if (parent != null) {// ·若 获取的 包对象为Null
+                pkg = parent.getPackage(name);// ·则获取 父类加载器的 包对象
             } else {
                 pkg = Package.getSystemPackage(name);
             }
