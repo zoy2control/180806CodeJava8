@@ -327,7 +327,7 @@ public class Manifest implements Cloneable {
      * A fast buffered input stream for parsing manifest files.
      */
     static class FastInputStream extends FilterInputStream {
-        private byte buf[];
+        private byte buf[];// ·byte[]
         private int count = 0;
         private int pos = 0;
 
@@ -454,7 +454,7 @@ public class Manifest implements Cloneable {
 
         private void fill() throws IOException {
             count = pos = 0;
-            int n = in.read(buf, 0, buf.length);// ·读取
+            int n = in.read(buf, 0, buf.length);// ·
             if (n > 0) {
                 count = n;
             }

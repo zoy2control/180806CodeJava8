@@ -46,7 +46,7 @@ public abstract class InputStream implements Closeable {
 
     // MAX_SKIP_BUFFER_SIZE is used to determine the maximum buffer size to
     // use when skipping.
-    private static final int MAX_SKIP_BUFFER_SIZE = 2048;
+    private static final int MAX_SKIP_BUFFER_SIZE = 2048;// ·buffer的最大 skipSize
 
     /**
      * Reads the next byte of data from the input stream. The value byte is
@@ -102,6 +102,10 @@ public abstract class InputStream implements Closeable {
     }
 
     /**
+     * ·从 InputStream中读取字符到 buffer中（b[]，从 off位置开始存储 新读取的字符）
+     * <p>
+     * ·抽象方法 .read()是重点。思想很重要
+     * <p>
      * Reads up to <code>len</code> bytes of data from the input stream into
      * an array of bytes.  An attempt is made to read as many as
      * <code>len</code> bytes, but a smaller number may be read.
@@ -144,11 +148,11 @@ public abstract class InputStream implements Closeable {
      *
      * @param      b     the buffer into which the data is read.
      * @param      off   the start offset in array <code>b</code>
-     *                   at which the data is written.
-     * @param      len   the maximum number of bytes to read.
+     *                   at which the data is written.// ·起始读取位置（数组下标）
+     * @param      len   the maximum number of bytes to read.// ·最大读取数目。起始就是 buffer的大小
      * @return     the total number of bytes read into the buffer, or
      *             <code>-1</code> if there is no more data because the end of
-     *             the stream has been reached.
+     *             the stream has been reached.// ·返回的是 读取字符数目（InputStream --> buffer）
      * @exception  IOException If the first byte cannot be read for any reason
      * other than end of file, or if the input stream has been closed, or if
      * some other I/O error occurs.
@@ -159,6 +163,7 @@ public abstract class InputStream implements Closeable {
      * @see        java.io.InputStream#read()
      */
     public int read(byte b[], int off, int len) throws IOException {
+        // ·入参校验
         if (b == null) {
             throw new NullPointerException();
         } else if (off < 0 || len < 0 || len > b.length - off) {
@@ -167,27 +172,32 @@ public abstract class InputStream implements Closeable {
             return 0;
         }
 
-        int c = read();
+        // ·先读取一个字符，并添加进 buffer。然后再 循环添加。？？？why
+        int c = read();// ·！！！抽象方法 .read()，读取 一个字符。重点在这里
         if (c == -1) {
             return -1;
         }
-        b[off] = (byte)c;
+        b[off] = (byte)c;// ·字符c 添加到 buffer
 
-        int i = 1;
+        int i = 1;// ·注意，下标 从1开始
         try {
+            // ·循环 读取字符并添加
             for (; i < len ; i++) {
-                c = read();
+                c = read();// ·读取一个
                 if (c == -1) {
                     break;
                 }
-                b[off + i] = (byte)c;
+                b[off + i] = (byte)c;// ·添加一个
             }
         } catch (IOException ee) {
         }
-        return i;
+        return i;// ·返回的是 读取字符数目（InputStream --> buffer）
     }
 
     /**
+     * ·忽略 InputStream中的 n个字符。
+     * ·在 n个字符被 skip完之前，结束了，只有一种可能是 到达了文件的终点
+     * <p>
      * Skips over and discards <code>n</code> bytes of data from this input
      * stream. The <code>skip</code> method may, for a variety of reasons, end
      * up skipping over some smaller number of bytes, possibly <code>0</code>.
@@ -204,31 +214,37 @@ public abstract class InputStream implements Closeable {
      * encouraged to provide a more efficient implementation of this method.
      * For instance, the implementation may depend on the ability to seek.
      *
-     * @param      n   the number of bytes to be skipped.
-     * @return     the actual number of bytes skipped.
+     * @param      n   the number of bytes to be skipped.// ·想要 skip的字符数目。可正 可负 可为0
+     * @return     the actual number of bytes skipped.// ·实际 skip的字符数目
      * @exception  IOException  if the stream does not support seek,
      *                          or if some other I/O error occurs.
      */
     public long skip(long n) throws IOException {
 
         long remaining = n;
-        int nr;
+        int nr;// ·存入 skipBuffer的字符数目
 
-        if (n <= 0) {
+        if (n <= 0) {// ·负数或 为0
             return 0;
         }
 
-        int size = (int)Math.min(MAX_SKIP_BUFFER_SIZE, remaining);
-        byte[] skipBuffer = new byte[size];
-        while (remaining > 0) {
+        int size = (int)Math.min(MAX_SKIP_BUFFER_SIZE, remaining);// ·取最小值
+        byte[] skipBuffer = new byte[size];// ·存储 被skip的字符
+
+        // ·循环 .read()
+        while (remaining > 0) {// ·remaining小于0，到达 文件终点
+            // ·？？？为什么这里还做一次 Math.min()操作
+            // ·——》这里是 while循环，remaining会越来越小
+            // ·？？？那每次都从 buffer的 0下标开始，上次 存入下标0的数据不就被覆盖了吗
+            // ·但是按常理来说， size = remaining，能否说明 while其实只走一次
             nr = read(skipBuffer, 0, (int)Math.min(size, remaining));
             if (nr < 0) {
                 break;
             }
-            remaining -= nr;
+            remaining -= nr;// ·更新：还剩 remaining个字符没有存储
         }
 
-        return n - remaining;
+        return n - remaining;// ·实际 skip的字符数目
     }
 
     /**
@@ -270,6 +286,7 @@ public abstract class InputStream implements Closeable {
      *
      * @exception  IOException  if an I/O error occurs.
      */
+    @Override
     public void close() throws IOException {}
 
     /**
