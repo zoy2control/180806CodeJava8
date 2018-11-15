@@ -284,10 +284,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * TreeNode subclass, and in LinkedHashMap for its Entry subclass.)
      */
     static class Node<K,V> implements Map.Entry<K,V> {
-        final int hash;
+        final int hash;// ·节点哈希值
         final K key;
         V value;
-        Node<K,V> next;
+        Node<K,V> next;// ·指向 下一个Node<K,V>
 
         Node(int hash, K key, V value, Node<K,V> next) {
             this.hash = hash;
@@ -466,7 +466,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     transient int modCount;
 
     /**
-     * ·capacity * load factor为下一次 resize的容量大小
+     * ·下一次 resize的容量大小<p>
+     * ·threshold计算公式为：capacity * load factor
      * The next size value at which to resize (capacity * load factor).
      *
      * @serial
@@ -475,7 +476,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     // Additionally, if the table array has not been allocated, this
     // field holds the initial array capacity, or zero signifying
     // DEFAULT_INITIAL_CAPACITY.)
-    int threshold;// ·线程持有数
+    int threshold;// ·下一次 resize的容量持有量
 
     /**
      * The load factor for the hash table.
@@ -545,6 +546,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
+     * ·增
      * Implements Map.putAll and Map constructor
      *
      * @param m the map
@@ -552,17 +554,19 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * true (relayed to method afterNodeInsertion).
      */
     final void putMapEntries(Map<? extends K, ? extends V> m, boolean evict) {
+        // ·增前判断是否需要扩容，m.size()是 待插入容量大小
         int s = m.size();
         if (s > 0) {
             if (table == null) { // pre-size
-                float ft = ((float)s / loadFactor) + 1.0F;
+                float ft = ((float)s / loadFactor) + 1.0F;// ·定容
+                // ·不可超过 最大容量
                 int t = ((ft < (float)MAXIMUM_CAPACITY) ?
                          (int)ft : MAXIMUM_CAPACITY);
-                if (t > threshold) {
-                    threshold = tableSizeFor(t);
+                if (t > threshold) {// ·与 threshold比较
+                    threshold = tableSizeFor(t);// ·将 目标容量转化成 2的次方形式
                 }
             }
-            else if (s > threshold) {
+            else if (s > threshold) {// ·待插入容量 > 持有量
                 resize();
             }
             for (Map.Entry<? extends K, ? extends V> e : m.entrySet()) {
@@ -736,51 +740,69 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
+     * ·初始化或者 双倍扩容。<p>
+     * ·刚开始，如果不为Null，那么 初始化容量是 threshold指定的
+     * ·否则，两倍扩容，元素还是在 相同的index，或者 移动到新表的 power of two offset
      * Initializes or doubles table size.  If null, allocates in
      * accord with initial capacity target held in field threshold.
      * Otherwise, because we are using power-of-two expansion, the
      * elements from each bin must either stay at same index, or move
      * with a power of two offset in the new table.
      *
-     * @return the table
+     * @return the table// ·返回 table
      */
     final Node<K,V>[] resize() {
-        Node<K,V>[] oldTab = table;
-        int oldCap = (oldTab == null) ? 0 : oldTab.length;
-        int oldThr = threshold;
+        Node<K,V>[] oldTab = table;// ·旧表
+        int oldCap = (oldTab == null) ? 0 : oldTab.length;// ·旧容量
+        int oldThr = threshold;// ·很重要一点，threshold是下一次 resize的容量持有量
         int newCap, newThr = 0;
+
         if (oldCap > 0) {
-            if (oldCap >= MAXIMUM_CAPACITY) {
-                threshold = Integer.MAX_VALUE;
-                return oldTab;
+            if (oldCap >= MAXIMUM_CAPACITY) {// ·旧表容量已爆（大于 MAXIMUM_CAPACITY）
+                threshold = Integer.MAX_VALUE;// ·设置 旧表threshold为 Integer最大值 ——》 .resize()成功
+                return oldTab;// ·扩容后的旧表返回
             }
+
+            // ·oldCap需要扩容了（oldCap >= DEFAULT_INITIAL_CAPACITY），
+            // ·双倍扩容后的容量任然比 MAXIMUM_CAPACITY小（(newCap = oldCap << 1) < MAXIMUM_CAPACITY） ——》 放心扩容
             else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
-                     oldCap >= DEFAULT_INITIAL_CAPACITY) {
+                     oldCap >= DEFAULT_INITIAL_CAPACITY) {// ·ei1 ——》
+                // ·注意这里是 newThr，不是 newCap
                 newThr = oldThr << 1; // double threshold
             }
         }
-        else if (oldThr > 0) // initial capacity was placed in threshold
-        {
-            newCap = oldThr;
+
+        // ·oldCap <= 0 || 不用扩容 || 双倍容量超过 最大容量限制
+        else if (oldThr > 0) {// initial capacity was placed in threshold
+            newCap = oldThr;// ·设置新容量 newCap，从 CV·threshold中取出
         } else {               // zero initial threshold signifies using defaults
+            // ·threshold为0，都用 默认值
             newCap = DEFAULT_INITIAL_CAPACITY;
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
+
+        // ·定 newThreshold
         if (newThr == 0) {
-            float ft = (float)newCap * loadFactor;
+            float ft = (float)newCap * loadFactor;// ·计算期望 newThreshold
+            // ·实际 newThreshold。ft和 Integer.MAX_VALUE二选一
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                       (int)ft : Integer.MAX_VALUE);
         }
-        threshold = newThr;
+        threshold = newThr;// ·新CV·threshold
+
         @SuppressWarnings({"rawtypes","unchecked"})
-            Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+        Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];// ·newTable
         table = newTab;
+
+        // ·旧表元素 copy到 新表
         if (oldTab != null) {
-            for (int j = 0; j < oldCap; ++j) {
+            for (int j = 0; j < oldCap; ++j) {// ·遍历 旧表
                 Node<K,V> e;
-                if ((e = oldTab[j]) != null) {
-                    oldTab[j] = null;
-                    if (e.next == null) {
+                if ((e = oldTab[j]) != null) {// ·取出元素e
+                    oldTab[j] = null;// ·旧表元素set null
+
+                    if (e.next == null) {// ·e是 末尾节点
+//                        int newIndex = e.hash & (newCap - 1);// ·新表的 index
                         newTab[e.hash & (newCap - 1)] = e;
                     } else if (e instanceof TreeNode) {
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
@@ -1968,26 +1990,29 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     // Tree bins
 
     /**
+     * ·树节点，继承  LinkedHashMap.Entry<K,V>，所以可以用来 扩展成 有规则的或者 lined的节t点
      * Entry for Tree bins. Extends LinkedHashMap.Entry (which in turn
      * extends Node) so can be used as extension of either regular or
      * linked node.
      */
     static final class TreeNode<K,V> extends LinkedHashMap.Entry<K,V> {
-        TreeNode<K,V> parent;  // red-black tree links
+        TreeNode<K,V> parent;  // red-black tree links·红黑树
         TreeNode<K,V> left;
         TreeNode<K,V> right;
-        TreeNode<K,V> prev;    // needed to unlink next upon deletion
+        TreeNode<K,V> prev;    // needed to unlink next upon deletion·？？？待删除
         boolean red;
         TreeNode(int hash, K key, V val, Node<K,V> next) {
-            super(hash, key, val, next);
+            super(hash, key, val, next);// ·父类构造器
         }
 
         /**
+         * ·包含这个节点的 树的根节点
          * Returns root of tree containing this node.
          */
         final TreeNode<K,V> root() {
+            // ·向上遍历
             for (TreeNode<K,V> r = this, p;;) {
-                if ((p = r.parent) == null) {
+                if ((p = r.parent) == null) {// ·根节点
                     return r;
                 }
                 r = p;
@@ -1995,28 +2020,35 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         }
 
         /**
+         * ·将 入参 root节点移动到前面（first节点前面）
+         * ·确保给的 根节点是这个 bin的 第一个节点
          * Ensures that the given root is the first node of its bin.
          */
         static <K,V> void moveRootToFront(Node<K,V>[] tab, TreeNode<K,V> root) {
             int n;
             if (root != null && tab != null && (n = tab.length) > 0) {
-                int index = (n - 1) & root.hash;
-                TreeNode<K,V> first = (TreeNode<K,V>)tab[index];
-                if (root != first) {
-                    Node<K,V> rn;
-                    tab[index] = root;
-                    TreeNode<K,V> rp = root.prev;
+                int index = (n - 1) & root.hash;// ·计算 first节点index
+                TreeNode<K,V> first = (TreeNode<K,V>)tab[index];// ·找到 first节点
+
+                if (root != first) {// ·根节点不是 第一个节点
+                    Node<K,V> rn;// ·root.next
+                    tab[index] = root;// ·入参根节点写入 table
+                    TreeNode<K,V> rp = root.prev;// ·根节点的 前节点
+
+                    // ·红黑树中拿出 节点root
                     if ((rn = root.next) != null) {
-                        ((TreeNode<K,V>)rn).prev = rp;
+                        ((TreeNode<K,V>)rn).prev = rp;// ·rp = root.prev <-- rn = root.next
                     }
                     if (rp != null) {
-                        rp.next = rn;
+                        rp.next = rn;// ·rp --> rn
                     }
+
+                    // ·节点root并没有删除，而是放在 first节点前面
                     if (first != null) {
-                        first.prev = root;
+                        first.prev = root;// ·root <-- first
                     }
-                    root.next = first;
-                    root.prev = null;
+                    root.next = first;// ·root --> first
+                    root.prev = null;// ·null <-- rook
                 }
                 assert checkInvariants(root);
             }
@@ -2321,14 +2353,16 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         }
 
         /**
+         * ·删除节点（树结构）<p>
+         * ·只在 .resize()的时候被调用
          * Splits nodes in a tree bin into lower and upper tree bins,
          * or untreeifies if now too small. Called only from resize;
          * see above discussion about split bits and indices.
          *
          * @param map the map
-         * @param tab the table for recording bin heads
-         * @param index the index of the table being split
-         * @param bit the bit of hash to split on
+         * @param tab the table for recording bin heads// ·？？？recording bin heads
+         * @param index the index of the table being split// ·待删除的节点下标
+         * @param bit the bit of hash to split on// ·待删除节点hash值
          */
         final void split(HashMap<K,V> map, Node<K,V>[] tab, int index, int bit) {
             TreeNode<K,V> b = this;
@@ -2578,32 +2612,39 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         }
 
         /**
+         * ·递归不变量检查
          * Recursive invariant check
          */
         static <K,V> boolean checkInvariants(TreeNode<K,V> t) {
+            // ·入参t的各个方位的节点
             TreeNode<K,V> tp = t.parent, tl = t.left, tr = t.right,
                 tb = t.prev, tn = (TreeNode<K,V>)t.next;
-            if (tb != null && tb.next != t) {
+
+            // ·各方位节点校验，精华所在
+            if (tb != null && tb.next != t) {// ·tb <-- t
                 return false;
             }
-            if (tn != null && tn.prev != t) {
+            if (tn != null && tn.prev != t) {// ·t --> tn
                 return false;
             }
-            if (tp != null && t != tp.left && t != tp.right) {
+            if (tp != null && t != tp.left && t != tp.right) {// ·t.parent
                 return false;
             }
-            if (tl != null && (tl.parent != t || tl.hash > t.hash)) {
+            if (tl != null && (tl.parent != t || tl.hash > t.hash)) {// ·t.left
+                return false;// ·t.left存在 && （left.parent不是 t 或者
+            }
+            if (tr != null && (tr.parent != t || tr.hash < t.hash)) {// ·t.right
                 return false;
             }
-            if (tr != null && (tr.parent != t || tr.hash < t.hash)) {
+            if (t.red && tl != null && tl.red && tr != null && tr.red) {// ·t.left.red、t.right.red、t.red
                 return false;
             }
-            if (t.red && tl != null && tl.red && tr != null && tr.red) {
-                return false;
-            }
+
+            // ·递归 left
             if (tl != null && !checkInvariants(tl)) {
                 return false;
             }
+            // ·递归 right
             if (tr != null && !checkInvariants(tr)) {
                 return false;
             }
