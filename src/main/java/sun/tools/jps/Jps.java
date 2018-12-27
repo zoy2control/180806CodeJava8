@@ -41,7 +41,7 @@ public class Jps {
 
     public static void main(String[] args) {
         try {
-            arguments = new Arguments(args);
+            arguments = new Arguments(args);// ·入参
         } catch (IllegalArgumentException e) {
             System.err.println(e.getMessage());
             Arguments.printUsage(System.err);
@@ -54,18 +54,17 @@ public class Jps {
         }
 
         try {
-            HostIdentifier hostId = arguments.hostId();
-            MonitoredHost monitoredHost =
-                    MonitoredHost.getMonitoredHost(hostId);
+            HostIdentifier hostId = arguments.hostId();// ·main参数获取 hostId
+            MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(hostId);// ·根据hostId，获取host
 
             // get the set active JVMs on the specified host.
-            Set<Integer> jvms = monitoredHost.activeVms();
+            Set<Integer> jvms = monitoredHost.activeVms();// ·根据host 获取JVM所有 vmId
 
-            for (Integer jvm: jvms) {
+            for (Integer jvm: jvms) {// ·遍历 vmIds
                 StringBuilder output = new StringBuilder();
                 Throwable lastError = null;
 
-                int lvmid = jvm;
+                int lvmid = jvm;// ·vmId
 
                 output.append(String.valueOf(lvmid));
 
@@ -75,7 +74,7 @@ public class Jps {
                 }
 
                 MonitoredVm vm = null;
-                String vmidString = "//" + lvmid + "?mode=r";
+                String vmidString = "//" + lvmid + "?mode=r";// ·拼接vmId
 
                 String errorString = null;
 
@@ -89,31 +88,30 @@ public class Jps {
 
                     errorString = " -- process information unavailable";
                     VmIdentifier id = new VmIdentifier(vmidString);
-                    vm = monitoredHost.getMonitoredVm(id, 0);
+                    vm = monitoredHost.getMonitoredVm(id, 0);// ·获取MonitoredVm
 
                     errorString = " -- main class information unavailable";
-                    output.append(" " + MonitoredVmUtil.mainClass(vm,
-                            arguments.showLongPaths()));
+                    output.append(" " + MonitoredVmUtil.mainClass(vm, arguments.showLongPaths()));// ·拼接 vmId + 包名/jar名
 
-                    if (arguments.showMainArgs()) {
+                    if (arguments.showMainArgs()) {// ·若要展示 main方法的入参
                         errorString = " -- main args information unavailable";
                         String mainArgs = MonitoredVmUtil.mainArgs(vm);
                         if (mainArgs != null && mainArgs.length() > 0) {
-                            output.append(" " + mainArgs);
+                            output.append(" " + mainArgs);// ·vmId + mainArgs
                         }
                     }
-                    if (arguments.showVmArgs()) {
+                    if (arguments.showVmArgs()) {// ·若要展示 jvm的入参
                         errorString = " -- jvm args information unavailable";
                         String jvmArgs = MonitoredVmUtil.jvmArgs(vm);
                         if (jvmArgs != null && jvmArgs.length() > 0) {
-                          output.append(" " + jvmArgs);
+                          output.append(" " + jvmArgs);// ·vmId + jvmArgs
                         }
                     }
-                    if (arguments.showVmFlags()) {
+                    if (arguments.showVmFlags()) {// ·若要展示 jvm的 flags
                         errorString = " -- jvm flags information unavailable";
                         String jvmFlags = MonitoredVmUtil.jvmFlags(vm);
                         if (jvmFlags != null && jvmFlags.length() > 0) {
-                            output.append(" " + jvmFlags);
+                            output.append(" " + jvmFlags);// ·vmId + jvmFlags
                         }
                     }
 
@@ -130,7 +128,7 @@ public class Jps {
                 } catch (Exception e) {
                     lastError = e;
                 } finally {
-                    if (errorString != null) {
+                    if (errorString != null) {// ·有 错误信息
                         /*
                          * we ignore most exceptions, as there are race
                          * conditions where a JVM in 'jvms' may terminate

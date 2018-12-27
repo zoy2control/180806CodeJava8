@@ -304,7 +304,7 @@ import sun.misc.LRUCache;
 public final class Scanner implements Iterator<String>, Closeable {
 
     // Internal buffer used to hold input
-    private CharBuffer buf;
+    private CharBuffer buf;// ·存放字符源
 
     // Size of internal character buffer
     private static final int BUFFER_SIZE = 1024; // change to 1024;
@@ -316,7 +316,7 @@ public final class Scanner implements Iterator<String>, Closeable {
     private Matcher matcher;
 
     // Pattern used to delimit tokens
-    private Pattern delimPattern;
+    private Pattern delimPattern;// ·分隔符的正则模式
 
     // Pattern found in last hasNext operation
     private Pattern hasNextPattern;
@@ -328,7 +328,7 @@ public final class Scanner implements Iterator<String>, Closeable {
     private String hasNextResult;
 
     // The input source
-    private Readable source;
+    private Readable source;// ·Readable字符源
 
     // Boolean is true if source is done
     private boolean sourceClosed = false;
@@ -374,16 +374,14 @@ public final class Scanner implements Iterator<String>, Closeable {
     // A holder of the last IOException encountered
     private IOException lastException;
 
-    // A pattern for java whitespace
-    private static Pattern WHITESPACE_PATTERN = Pattern.compile(
-                                                "\\p{javaWhitespace}+");
+    // A pattern for java whitespace·空格符 ==》 默认 pattern
+    private static Pattern WHITESPACE_PATTERN = Pattern.compile("\\p{javaWhitespace}+");
 
     // A pattern for any token
     private static Pattern FIND_ANY_PATTERN = Pattern.compile("(?s).*");
 
-    // A pattern for non-ASCII digits
-    private static Pattern NON_ASCII_DIGIT = Pattern.compile(
-        "[\\p{javaDigit}&&[^0-9]]");
+    // A pattern for non-ASCII digits·非ASCII数字
+    private static Pattern NON_ASCII_DIGIT = Pattern.compile("[\\p{javaDigit}&&[^0-9]]");
 
     // Fields and methods to support scanning primitive types
 
@@ -524,16 +522,17 @@ public final class Scanner implements Iterator<String>, Closeable {
      * Constructs a <code>Scanner</code> that returns values scanned
      * from the specified source delimited by the specified pattern.
      *
-     * @param source A character source implementing the Readable interface
-     * @param pattern A delimiting pattern
+     * @param source A character source implementing the Readable interface·一个实现 Readable接口的 字符源
+     * @param pattern A delimiting pattern·分隔符的正则模式
      */
     private Scanner(Readable source, Pattern pattern) {
         assert source != null : "source should not be null";
         assert pattern != null : "pattern should not be null";
         this.source = source;
-        delimPattern = pattern;
+        delimPattern = pattern;// ·Pattern
         buf = CharBuffer.allocate(BUFFER_SIZE);
         buf.limit(0);
+        // ·matcher
         matcher = delimPattern.matcher(buf);
         matcher.useTransparentBounds(true);
         matcher.useAnchoringBounds(false);
@@ -545,7 +544,7 @@ public final class Scanner implements Iterator<String>, Closeable {
      * from the specified source.
      *
      * @param  source A character source implementing the {@link Readable}
-     *         interface
+     *         interface·一个实现 Readable接口的 字符源
      */
     public Scanner(Readable source) {
         this(Objects.requireNonNull(source, "source"), WHITESPACE_PATTERN);
@@ -557,7 +556,7 @@ public final class Scanner implements Iterator<String>, Closeable {
      * into characters using the underlying platform's
      * {@linkplain java.nio.charset.Charset#defaultCharset() default charset}.
      *
-     * @param  source An input stream to be scanned
+     * @param  source An input stream to be scanned·要扫描的 输入流
      */
     public Scanner(InputStream source) {
         this(new InputStreamReader(source), WHITESPACE_PATTERN);
@@ -570,24 +569,26 @@ public final class Scanner implements Iterator<String>, Closeable {
      *
      * @param  source An input stream to be scanned
      * @param charsetName The encoding type used to convert bytes from the
-     *        stream into characters to be scanned
+     *        stream into characters to be scanned ·Stream --charsetName--> char
      * @throws IllegalArgumentException if the specified character set
      *         does not exist
      */
     public Scanner(InputStream source, String charsetName) {
+        // ·InputStream通过指定字符集charsetName转换成 char
         this(makeReadable(Objects.requireNonNull(source, "source"), toCharset(charsetName)),
              WHITESPACE_PATTERN);
     }
 
     /**
+     * ·缓存中查找 字符集（用于 byte <--> char之间转换）
      * Returns a charset object for the given charset name.
      * @throws NullPointerException          is csn is null
      * @throws IllegalArgumentException      if the charset is not supported
      */
     private static Charset toCharset(String csn) {
-        Objects.requireNonNull(csn, "charsetName");
+        Objects.requireNonNull(csn, "charsetName");// ·校验入参不为Null
         try {
-            return Charset.forName(csn);
+            return Charset.forName(csn);// ·去 缓存查找 字符集
         } catch (IllegalCharsetNameException|UnsupportedCharsetException e) {
             // IllegalArgumentException should be thrown
             throw new IllegalArgumentException(e);
